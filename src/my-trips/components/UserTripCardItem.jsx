@@ -37,6 +37,7 @@ function UserTripCardItem({trip}) {
 
         </div>
     </div>
+    //another fixes
     </Link>
   )
 }
