@@ -14,10 +14,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
   });
   
   const generationConfig = {
-    temperature: 1,
-    topP: 0.95,
+    temperature: 0.7,
+    topP: 0.8,
     topK: 40,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 4096,
     responseMimeType: "application/json",
   };
   

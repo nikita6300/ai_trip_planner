@@ -77,37 +77,67 @@ function CreateTrip() {
 
     setLoading(true);
 
-    const FINAL_PROMPT = AI_PROMPT.replace(
-      "{location}",
-      formData?.location?.label
-    )
-      .replace("{totalDays}", formData?.noOfDays)
-      .replace("{traveler}", formData?.traveler)
-      .replace("{budget}", formData?.budget)
-      .replace("{totalDays}", formData?.noOfDays);
+    try {
+      const FINAL_PROMPT = AI_PROMPT.replace(
+        "{location}",
+        formData?.location?.label
+      )
+        .replace("{totalDays}", formData?.noOfDays)
+        .replace("{traveler}", formData?.traveler)
+        .replace("{budget}", formData?.budget)
+        .replace("{totalDays}", formData?.noOfDays);
 
-    // console.log(FINAL_PROMPT);
+      // console.log(FINAL_PROMPT);
 
-    const result = await chatSession.sendMessage(FINAL_PROMPT);
+      const result = await chatSession.sendMessage(FINAL_PROMPT);
+      
+      if (!result || !result?.response) {
+        toast.error("Failed to generate trip. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-    console.log("--", result?.response?.text());
-    setLoading(false);
-    SaveAiTrip(result?.response?.text());
+      const tripData = result?.response?.text();
+      console.log("--", tripData);
+      
+      if (!tripData) {
+        toast.error("Failed to get trip data. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      await SaveAiTrip(tripData);
+    } catch (error) {
+      console.error("Error generating trip:", error);
+      toast.error(error?.message || "Failed to generate trip. Please try again.");
+      setLoading(false);
+    }
   };
 
   const SaveAiTrip = async (TripData) => {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    const docId = Date.now().toString();
-    await setDoc(doc(db, "AITrips", docId), {
-      userSelection: formData,
-      TripData: JSON.parse(TripData),
-      userEmail: user?.email,
-      id: docId,
-    });
-    setLoading(false);
-    navigate("/view-trip/" + docId);
+      const user = JSON.parse(localStorage.getItem("user"));
+      const docId = Date.now().toString();
+      
+      const parsedTripData = typeof TripData === 'string' ? JSON.parse(TripData) : TripData;
+      
+      await setDoc(doc(db, "AITrips", docId), {
+        userSelection: formData,
+        TripData: parsedTripData,
+        userEmail: user?.email,
+        id: docId,
+      });
+      
+      setLoading(false);
+      toast.success("Trip generated successfully!");
+      navigate("/view-trip/" + docId);
+    } catch (error) {
+      console.error("Error saving trip:", error);
+      toast.error(error?.message || "Failed to save trip. Please try again.");
+      setLoading(false);
+    }
   };
 
   const GetUserProfile = (tokenInfo) => {
@@ -126,6 +156,10 @@ function CreateTrip() {
         localStorage.setItem("user", JSON.stringify(resp.data));
         setOpenDialog(false);
         OnGenerateTrip();
+      })
+      .catch((error) => {
+        console.error("Error getting user profile:", error);
+        toast.error("Failed to get user profile. Please try again.");
       });
   };
 
